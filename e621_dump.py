@@ -183,3 +183,5 @@ while True:
    time.sleep(2)
    
 print("Finished downloading media")
+file.close()
+os.remove("tmp_html.txt")
