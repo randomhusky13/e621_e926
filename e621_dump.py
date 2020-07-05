@@ -250,6 +250,8 @@ while True:
       os.chdir("pools")
       #Check if proposed directory name contains a character that can't be used in directory names
       name_folder = check_invalid_chars(pool_name)
+      #Replace spaces with underscores
+      name_folder = name_folder.replace(' ','_', len(name_folder))
       #Check if directory already exists
       if path.exists(name_folder) is False:
          print('Creating directory "' + name_folder + '"')
