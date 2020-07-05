@@ -13,11 +13,14 @@ url_base = 'https://e621.net/posts?'
 url_page = 'page='
 url_tags = '&tags='
 
+tmp_file_base = "tmp_html_"
+tmp_file_ext = ".txt"
+
 list_of_urls = []
 
 folder_exists = False
 ###
-#STEP 1, GET TAGS AND CREATE URL
+#STEP 1, GET TAGS, FOLDER, AND CREATE URL
 ###
 
 print("Introduce tags: ", end ='')
@@ -31,6 +34,34 @@ tags = tags.replace(" ", "+")
 
 if DEBUG:
    print("TAGS MOD: " + str(tags))
+   
+   
+   
+   
+#Check if tags contain a character that can't be used in directory names
+   
+if folder_exists is False:
+   name_folder = tags
+   if any(i in name_folder for i in '*."/\\[]:;|,'):
+      print('Invalid character detected in directory name, replacing character with "-"')
+      #Replace any invalid character in the string
+      name_folder = name_folder.replace('*','-', len(name_folder))
+      name_folder = name_folder.replace('.','-', len(name_folder))
+      name_folder = name_folder.replace('"','-', len(name_folder))
+      name_folder = name_folder.replace('/','-', len(name_folder))
+      name_folder = name_folder.replace('\\','-', len(name_folder))
+      name_folder = name_folder.replace('[','-', len(name_folder))
+      name_folder = name_folder.replace(']','-', len(name_folder))
+      name_folder = name_folder.replace(':','-', len(name_folder))
+      name_folder = name_folder = name_folder.replace(';','-', len(name_folder))
+      name_folder = name_folder.replace('|','-', len(name_folder))
+      name_folder = name_folder.replace(',','-', len(name_folder))
+
+
+if path.exists(name_folder) is False:
+   print('Creating directory "' + name_folder + '"')
+   mkdir(name_folder)
+folder_exists = True
    
    
    
@@ -56,20 +87,21 @@ while True:
       url_final, 
       data=None, 
       headers={
-        'User-Agent': 'e926_dump/0.1 (By randomhusky13)'
+        'User-Agent': 'e621_dump/0.1 (By randomhusky13)'
         }
     )
+
    #open website
    f = urllib.request.urlopen(req)
    #open temporary file to dump the source code of the website
-   file = open("tmp_html.txt", 'wb')
+   file = open(tmp_file_base + name_folder + tmp_file_ext, 'wb')
    #dump the source of the website. Decode and encode to prevent errors on windows.
    src = f.read().decode('iso8859-1')
    file.write(src.encode('utf-8'))
    #close the file
    file.close()
    #open the file for parsing
-   file = open("tmp_html.txt", encoding="utf-8")
+   file = open(tmp_file_base + name_folder + tmp_file_ext, encoding="utf-8")
    lines = file.readlines()
 
    #check if line of html is for media and get max page number
@@ -128,35 +160,9 @@ while True:
    file.close()
 
 ###
-#STEP 3, CREATE FOLDER AND DOWNLOAD MEDIA
+#STEP 3, DOWNLOAD MEDIA
 ###
-   #Check if tags contain a character that can't be used in directory names
-   
-   if folder_exists is False:
-      name_folder = tags
-      print("name_folder: " + name_folder)
-      if any(i in name_folder for i in '*."/\\[]:;|,'):
-         print('Invalid character detected in directory name, replacing character with "-"')
-         #Replace any invalid character in the string
-         name_folder = name_folder.replace('*','-', len(name_folder))
-         name_folder = name_folder.replace('.','-', len(name_folder))
-         name_folder = name_folder.replace('"','-', len(name_folder))
-         name_folder = name_folder.replace('/','-', len(name_folder))
-         name_folder = name_folder.replace('\\','-', len(name_folder))
-         name_folder = name_folder.replace('[','-', len(name_folder))
-         name_folder = name_folder.replace(']','-', len(name_folder))
-         name_folder = name_folder.replace(':','-', len(name_folder))
-         name_folder = name_folder = name_folder.replace(';','-', len(name_folder))
-         name_folder = name_folder.replace('|','-', len(name_folder))
-         name_folder = name_folder.replace(',','-', len(name_folder))
 
-  
-
-
-   if path.exists(name_folder) is False:
-      print('Creating directory "' + name_folder + '"')
-      mkdir(name_folder)
-   folder_exists = True
    print("Downloading media from page " + str(page) + "...")
    while(len(list_of_urls) > 0):
       #get url from list
@@ -184,4 +190,4 @@ while True:
    
 print("Finished downloading media")
 file.close()
-os.remove("tmp_html.txt")
+os.remove(tmp_file_base + name_folder + tmp_file_ext)
