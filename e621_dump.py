@@ -9,11 +9,13 @@ DEBUG = 0
 #Set the max number of pages to download without giving a warning
 pages_total_warning = 5
 
-url_base = 'https://e926.net/posts?'
+url_base = 'https://e621.net/posts?'
 url_page = 'page='
 url_tags = '&tags='
 
 list_of_urls = []
+
+folder_exists = False
 ###
 #STEP 1, GET TAGS AND CREATE URL
 ###
@@ -129,21 +131,24 @@ while True:
 #STEP 3, CREATE FOLDER AND DOWNLOAD MEDIA
 ###
    #Check if tags contain a character that can't be used in directory names
-   name_folder = tags
-   if '*' or '.' or '"' or '/' or "\\" or '[' or ']' or ':' or ';' or '|' or ',' in name_folder:
-      print('Invalid character detected in directory name, replacing character with "-"')
-      #Replace any invalid character in the string
-      name_folder = name_folder.replace('*','-', len(name_folder))
-      name_folder = name_folder.replace('.','-', len(name_folder))
-      name_folder = name_folder.replace('"','-', len(name_folder))
-      name_folder = name_folder.replace('/','-', len(name_folder))
-      name_folder = name_folder.replace('\\','-', len(name_folder))
-      name_folder = name_folder.replace('[','-', len(name_folder))
-      name_folder = name_folder.replace(']','-', len(name_folder))
-      name_folder = name_folder.replace(':','-', len(name_folder))
-      name_folder = name_folder = name_folder.replace(';','-', len(name_folder))
-      name_folder = name_folder.replace('|','-', len(name_folder))
-      name_folder = name_folder.replace(',','-', len(name_folder))
+   
+   if folder_exists is False:
+      name_folder = tags
+      print("name_folder: " + name_folder)
+      if any(i in name_folder for i in '*."/\\[]:;|,'):
+         print('Invalid character detected in directory name, replacing character with "-"')
+         #Replace any invalid character in the string
+         name_folder = name_folder.replace('*','-', len(name_folder))
+         name_folder = name_folder.replace('.','-', len(name_folder))
+         name_folder = name_folder.replace('"','-', len(name_folder))
+         name_folder = name_folder.replace('/','-', len(name_folder))
+         name_folder = name_folder.replace('\\','-', len(name_folder))
+         name_folder = name_folder.replace('[','-', len(name_folder))
+         name_folder = name_folder.replace(']','-', len(name_folder))
+         name_folder = name_folder.replace(':','-', len(name_folder))
+         name_folder = name_folder = name_folder.replace(';','-', len(name_folder))
+         name_folder = name_folder.replace('|','-', len(name_folder))
+         name_folder = name_folder.replace(',','-', len(name_folder))
 
   
 
@@ -151,6 +156,7 @@ while True:
    if path.exists(name_folder) is False:
       print('Creating directory "' + name_folder + '"')
       mkdir(name_folder)
+   folder_exists = True
    print("Downloading media from page " + str(page) + "...")
    while(len(list_of_urls) > 0):
       #get url from list
