@@ -1,3 +1,28 @@
+'''
+This script allows the user to dump media from the website e621.net
+
+This script is distributed free of charge. Please consider supporting
+the authors of the media you are downloading and the website hosting
+the media.
+
+Copyright (C) 2020 Original author: randomhusky13
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+'''
+
+
+
 import urllib.request
 import re
 import os.path
@@ -5,9 +30,20 @@ from os import path
 from os import mkdir
 import time
 
+######################################
+##### USER CONFIGURABLE SETTINGS #####
+######################################
+
+#Set to 1 if you wish to print debug information. Set to 0 to disable printing debug information.
 DEBUG = 0
 #Set the max number of pages to download without giving a warning
 pages_total_warning = 5
+
+
+#############################################
+##### END OF USER CONFIGURABLE SETTINGS #####
+#############################################
+
 
 #strings needed to build the website addresses
 url_base = 'https://e621.net/'
@@ -53,10 +89,22 @@ def check_invalid_chars( string_to_check ):
       string_to_check = string_to_check.replace(',','-', len(string_to_check))
    return string_to_check
 
-
+print("This script is distributed free of charge. Please consider supporting")
+print("the authors of the media you are downloading and the website hosting")
+print("the media.")
+print("")
+print("Copyright (C) 2020 Original author: randomhusky13")
+print("")
+print("This program comes with ABSOLUTELY NO WARRANTY")
+print("This is free software, and you are welcome to redistribute it")
+print("under certain conditions. By using this software, you are agreeing")
+print("to the terms established in the license. For more information,")
+print("check license GPLv3. <http://www.gnu.org/licenses/>")
+print("")
+print("")
 
 ###
-#STEP 1, GET TAGS OR POOL NUMBER, CREATE DIRECTORY FOR TAGS, AND CREATE URL
+#STEP 1, GET TAGS OR POOL ID, CREATE DIRECTORY FOR TAGS, AND CREATE URL
 ###
 
 #Get media type from user
@@ -79,7 +127,7 @@ while(True):
       exit()
 
 if media_type is "a":
-   print("Introduce tags: ", end ='')
+   print("Introduce tags, each one separated by a single space: ", end ='')
    tags = input()
    if DEBUG:
       print("TAGS: " + str(tags))
@@ -113,14 +161,6 @@ else:
    print("Unknown media type. Exiting")
    exit()
 
-
-   
-   
-   
-   
-   
-   
-   
 ###
 #STEP 2, FETCH WEBSITE, IDENTIFY ELEMENTS, AND CREATE DIRECTORY FOR POOLS
 ###   
@@ -167,10 +207,13 @@ while True:
    file = open(tmp_file_base + tmp_file_name + tmp_file_ext, encoding="utf-8")
    lines = file.readlines()
 
-   #check if line of html is for media and get max page number
+   #check each line of html for media info, page info, and pool info.
    for line in lines:
       if DEBUG:
          print(line)
+      ###
+      # GET MEDIA INFO
+      ###
       #Check if this is the element for an image
       if ('article id=' in line) or (data_missing is True):
           counter = 0
@@ -191,6 +234,9 @@ while True:
              print(line[url_start.start()+15:url_end.start()-2])
           #Add url to list. We move 15 spaces to point to exact start of the url. we move 2 spaces to point to the exact end of the url.
           list_of_urls.append(line[url_start.start()+15:url_end.start()-2])
+      ###
+      # GET PAGE INFO
+      ###
       #get total number of pages
       if ('div class="paginator"' in line) and (pages_total_set is False):
          pages_total_end = re.search(r'\b(next)\b',line)
@@ -232,7 +278,10 @@ while True:
             else:
                pages_total_set = True
                pages_total = pages_total_temp
-          #Get pool name.
+      ###
+      # GET POOL INFO
+      ###
+      #Get pool name.
       if ("pool-category-series" in line) and (folder_exists is False):
          #Find the start of the pool name. The end of this line has 4 unwanted characters, hence the -5 (position of last wanted character)"
          pool_name = str(line[line.find('">')+2:-5])
@@ -263,14 +312,12 @@ while True:
             
       folder_exists = True
    file.close()
+   
 ###
 #STEP 3, DOWNLOAD MEDIA
 ###
-
    print("Downloading media from page " + str(page) + "...")
    while(len(list_of_urls) > 0):
-
-      
       #create the name of the file based on the media type
       if media_type is "a":
          #get url from list last to first
