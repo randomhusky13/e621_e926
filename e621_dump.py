@@ -59,7 +59,7 @@ tmp_file_ext = ".txt"
 
 list_of_urls = []
 
-folder_exists = False
+folder_exists_flag = False
 skip_setting_total_pages = False
 pages_total = 1
 pages_total_set = False
@@ -101,7 +101,7 @@ def fetch_data():
    global pages_total
    global pages_total_set
    global skip_setting_total_pages
-   global folder_exists
+   global folder_exists_flag
    global pool_page_counter
    global name_folder
 
@@ -114,8 +114,8 @@ def fetch_data():
       # create URL and start page at 1
       if media_type == "a" or media_type == "c":
          url_final = url_base + url_tags_base + url_page + str(page) + url_tags + tags
-      elif media_type == "b":
-         url_final = url_base + url_pool + str(pool) + url_page
+      elif media_type == "b" or media_type == "d":
+         url_final = url_base + url_pool + str(pool) + url_page + str(page)
       else:
          print("Unknown media type. Exiting")
          exit()
@@ -189,6 +189,7 @@ def fetch_data():
             else:
                skip_setting_total_pages = True
                pages_total_set = True
+               pages_total = 1
 
             # Check if we need to set the page number. Only done the first iteration.
             if skip_setting_total_pages is False:
@@ -223,14 +224,14 @@ def fetch_data():
          # GET POOL INFO
          ###
          # Get pool name.
-         if ("pool-category-series" in line) and (folder_exists is False):
+         if ("pool-category-series" in line) and (folder_exists_flag is False):
             # Find the start of the pool name. The end of this line has 4 unwanted characters, hence the -5 (position of last wanted character)"
             pool_name = str(line[line.find('">') + 2:-5])
             print("Pool name: " + pool_name)
       file.close()
 
       # If the directory hasn't been created at this point, then the media type is a pool.
-      if folder_exists is False:
+      if folder_exists_flag is False:
          # Check if pool directory exists. if not, create it
          if path.exists("pools") is False:
             print("Creating directory to store pools")
@@ -249,7 +250,7 @@ def fetch_data():
                pool_id = open(name_folder + "/ID_" + pool, 'wb')
                pool_id.close()
 
-         folder_exists = True
+         folder_exists_flag = True
       file.close()
 
       ###
@@ -265,7 +266,7 @@ def fetch_data():
             list_of_urls.pop()
             # get name of media
             media_name = url_download[36:]
-         elif media_type == "b":
+         elif media_type == "b" or media_type == "d":
             # get url from list first to last (pools are always in order. The fist link of page 1 will be pool element 1, the second element 2, and so on.)
             url_download = list_of_urls[0]
             # remove first url from list
@@ -318,7 +319,7 @@ def update_directories():
    global pages_total
    global pages_total_set
    global tags
-   global folder_exists
+   global folder_exists_flag
    total_number_of_directories = 0
    current_number_of_directories = 0
    list_of_directories = []
@@ -329,10 +330,10 @@ def update_directories():
 
    skip_setting_total_pages = True
    pages_total_set = True
-   folder_exists = True
+   folder_exists_flag = True
 
 
-   print("Warning! I will download from the " + str(pages_update_default) + " most recent pages for all the tags provided")
+   print("Warning! I will download from the " + str(pages_update_default) + " most recent pages for all the existing tag directories")
 
    print("Do you want to continue? (type y and press enter to continue or type anything else and press enter to exit)")
 
@@ -429,6 +430,75 @@ def folder_exists(directory_name):
    return name_of_directory
 
 
+def update_pools():
+
+   global pool
+   global folder_exists_flag
+   global tmp_file_name
+   global pool_page_counter
+   global pages_total_set
+   global skip_setting_total_pages
+
+   list_of_existing_pools = []
+   list_of_existing_pools_IDs = []
+   #check if the directory pools exist
+   if path.exists("pools") is False:
+      print("Pools directory not found. Please download some media first")
+      return
+
+   os.chdir("pools")
+
+   #get a list of the existing directories. This list will contain the names of the pools.
+   for directory in os.listdir('.'):
+      list_of_existing_pools.append(os.fsdecode(directory))
+
+   #check that the pools directory is not empty
+   if not list_of_existing_pools:
+      print("No existing pools found. Please download some media first")
+
+   #make a list of pools IDs
+   for element in list_of_existing_pools:
+      #go into pool directory
+      os.chdir(element)
+      #find pool ID
+      ID_found = False
+      for file in os.listdir('.'):
+         if "ID" in file:
+            temp = os.fsdecode(file)
+            list_of_existing_pools_IDs.append(temp[3:])
+            ID_found = True
+      #go up one directory so next iteration can go into another pool directory
+      os.chdir("../")
+      if ID_found == False:
+         print("Error, a pool directory is missing the ID file. Please redownload the pool and do not remove the ID file")
+         print("Directory missing ID: " + element)
+         exit()
+
+   # go up one directory so fetch code can do its normal check of pool directories
+   os.chdir("../")
+   #Iterate through the list of pool IDs and update each one
+   for pool_id in list_of_existing_pools_IDs:
+      #update the global variable that contains the pool ID for the URL
+      pool = pool_id
+      tmp_file_name = pool
+      #get the name of the existing directory
+      pool_directory_name = list_of_existing_pools[0]
+      #delete the directory where the current pool media will be stored from the list.
+      del list_of_existing_pools[0]
+
+      print("----")
+      print("Updating pool ID " + pool + " in directory " + pool_directory_name)
+      #Reset variables and flags
+      folder_exists_flag = False
+      pool_page_counter = 1
+      pages_total_set = False
+      skip_setting_total_pages = False
+      fetch_data()
+      print("----")
+      
+
+   return
+
 print("This script is distributed free of charge. Please consider supporting")
 print("the authors of the media you are downloading and the website hosting")
 print("the media.")
@@ -443,6 +513,25 @@ print("check license GPLv3. <http://www.gnu.org/licenses/>")
 print("")
 print("")
 
+#clean tmp files left behind to avoid problems
+for elem in os.listdir("."):
+   if "txt" in elem:
+      os.remove(elem)
+
+if path.exists("tags") is True:
+   os.chdir("tags")
+   for elem in os.listdir("."):
+      if "txt" in elem:
+         os.remove(elem)
+   os.chdir("../")
+
+if path.exists("pools") is True:
+   os.chdir("pools")
+   for elem in os.listdir("."):
+      if ".txt" in elem:
+         os.remove(elem)
+   os.chdir("../")
+
 ###
 #STEP 1, GET TAGS OR POOL ID, CREATE DIRECTORY FOR TAGS, AND CREATE URL
 ###
@@ -451,13 +540,14 @@ print("")
 while(True):
 
    #Get type of media to download from the user
-   print("Type the character for the type of media to download and press enter ")
-   print('"a" tag based media')
-   print('"b" pool based media')
-   print('"c" update tag based media')
+   print("Type the character for the desired operation and press enter ")
+   print('"a" Download tag based media')
+   print('"b" Download pool based media')
+   print('"c" Update existing tag based media directories')
+   print('"d" Update existing pool based media directories')
    media_type = input()
    #Check if the input is valid
-   if (( "a" in media_type) or ( "b" in media_type) or ( "c" in media_type)) and (len(media_type) == 1):
+   if (( "a" in media_type) or ( "b" in media_type) or ( "c" in media_type) or ( "d" in media_type)) and (len(media_type) == 1):
       break
    #
    media_type_counter -= 1
@@ -494,7 +584,7 @@ if media_type == "a":
       #A directory was found, do not create a new one but update the name_folder to use the existing one.
       print("Directory already created: " + found_directory)
       name_folder = found_directory
-   folder_exists = True
+   folder_exists_flag = True
 
    if DEBUG:
       print("TAGS MOD: " + str(tags))
@@ -511,6 +601,9 @@ elif media_type == "b":
 
 elif media_type == "c":
    update_directories()
+
+elif media_type == "d":
+   update_pools()
 else:
    print("Unknown media type. Exiting")
    exit()
