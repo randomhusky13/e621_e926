@@ -100,12 +100,14 @@ def fetch_data():
    # set total pages as 1 to terminate after one iteration
    global pages_total
    global pages_total_set
-   page = 1
    global skip_setting_total_pages
-   data_missing = False
    global folder_exists
    global pool_page_counter
    global name_folder
+
+   page = 1
+   data_missing = False
+   media_downloaded = 0
 
    while True:
 
@@ -281,6 +283,7 @@ def fetch_data():
          if path.exists(name_folder + "/" + str(media_name)) is False:
             with open(name_folder + "/" + str(media_name), 'wb') as media:
                with urllib.request.urlopen(url_download) as response_url:
+                  media_downloaded += 1
                   media.write(response_url.read())
          # increase page number for pools
          pool_page_counter += 1
@@ -303,6 +306,8 @@ def fetch_data():
    if path.exists(tmp_file_base + tmp_file_name + tmp_file_ext):
       os.remove(tmp_file_base + tmp_file_name + tmp_file_ext)
 
+
+   print( str(media_downloaded) + " media was downloaded")
    return
 
 def update_directories():
@@ -363,6 +368,67 @@ def update_directories():
 
    return
 
+def find_folder(list_of_tags, list_of_directories):
+
+   if not list_of_tags:
+      #No more tags left to check. return list_of_directories
+      return list_of_directories
+
+   if not list_of_directories:
+      #There are still tags to check but there are no more existing directories.
+      #Folder does not exist. return list_of_directories
+      return list_of_directories
+
+   new_list_of_directories = []
+
+   #get last tag from the tags list
+   tag_to_check = list_of_tags[-1]
+   #remove last tag from the list
+   del list_of_tags[-1]
+
+   for name_of_directory in list_of_directories:
+      #check if the tag exists in the name of the directory
+      if tag_to_check in name_of_directory:
+         #if it exists, then add the name of the directory to the new list.
+         new_list_of_directories.append(name_of_directory)
+
+   #the retuned list will be filtered out with the remaining tags
+   new_list_of_directories = find_folder(list_of_tags, new_list_of_directories)
+
+   #return the final list
+   return new_list_of_directories
+
+
+def folder_exists(directory_name):
+   list_of_directories = []
+
+
+   # get number of items
+   for directory in os.listdir('.'):
+      if "txt" in directory:
+         continue
+      # save information into a list
+      list_of_directories.append(os.fsdecode(directory))
+
+   #replace plus signs with spaces
+   tags = directory_name.replace("+", " ")
+
+   list_of_tags = tags.split()
+
+   list_of_found_directores = find_folder(list_of_tags, list_of_directories)
+
+   name_of_directory = ""
+
+   for element in list_of_found_directores:
+      #Final check. If we have multiple results, then there might be additional tags in the directory name.
+      #Only choose the one directory that has the same size as the request.
+      if len(directory_name) == len(element):
+         name_of_directory = element
+         break
+
+   return name_of_directory
+
+
 print("This script is distributed free of charge. Please consider supporting")
 print("the authors of the media you are downloading and the website hosting")
 print("the media.")
@@ -417,10 +483,17 @@ if media_type == "a":
       print("Creating directory to store tag dumps")
       mkdir("tags")
    os.chdir("tags")
+
+   found_directory = folder_exists(name_folder)
    #check if directory needs to be created
-   if path.exists(name_folder) is False:
+   if found_directory == "":
+      #directory does not exist. Create one
       print('Creating directory "' + name_folder + '"')
       mkdir(name_folder)
+   else:
+      #A directory was found, do not create a new one but update the name_folder to use the existing one.
+      print("Directory already created: " + found_directory)
+      name_folder = found_directory
    folder_exists = True
 
    if DEBUG:
