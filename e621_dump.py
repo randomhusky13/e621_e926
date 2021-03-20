@@ -116,7 +116,7 @@ while(True):
    print('"b" pool based media')
    media_type = input()
    #Check if the input is valid
-   if (( "a" in media_type) or ( "b" in media_type)) and (len(media_type) is 1):
+   if (( "a" in media_type) or ( "b" in media_type)) and (len(media_type) == 1):
       break
    #
    media_type_counter -= 1
@@ -126,7 +126,7 @@ while(True):
       print("Error limit exceeded. Exiting!")
       exit()
 
-if media_type is "a":
+if media_type == "a":
    print("Introduce tags, each one separated by a single space: ", end ='')
    tags = input()
    if DEBUG:
@@ -150,7 +150,7 @@ if media_type is "a":
 
    if DEBUG:
       print("TAGS MOD: " + str(tags))
-elif media_type is "b":
+elif media_type == "b":
    print("Introduce pool number: ", end ='')
    pool = input()
    #We use the pool id for our temporary file name since it's simpler and we won't get the real pool name until after one access to the website. Hence, the tags' directory name is known beforehand and can be set at this step, but the pool needs to be set in the next step.
@@ -174,9 +174,9 @@ skip_setting_total_pages = False
 while True:   
 
    #create URL and start page at 1
-   if media_type is "a":
+   if media_type == "a":
       url_final = url_base + url_tags_base + url_page + str(page) + url_tags + tags
-   elif media_type is "b":
+   elif media_type == "b":
       url_final = url_base + url_pool + str(pool) + url_page
    else:
       print("Unknown media type. Exiting")
@@ -319,14 +319,14 @@ while True:
    print("Downloading media from page " + str(page) + "...")
    while(len(list_of_urls) > 0):
       #create the name of the file based on the media type
-      if media_type is "a":
+      if media_type == "a":
          #get url from list last to first
          url_download = list_of_urls[-1]
          #remove last url from list
          list_of_urls.pop()
          #get name of media
          media_name = url_download[36:]
-      elif media_type is "b":
+      elif media_type == "b":
          #get url from list first to last (pools are always in order. The fist link of page 1 will be pool element 1, the second element 2, and so on.)
          url_download = list_of_urls[0]
          #remove first url from list
